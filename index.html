@@ -45,6 +45,28 @@
       border-radius: 1vw;
     }
 
+    /* Sun */
+    #sun {
+      position: absolute;
+      top: 5%;
+      right: 5%;
+      width: 10vw;
+      height: 10vw;
+      z-index: 0; /* behind clouds and birds */
+      pointer-events: none;
+    }
+
+    /* Grass at the bottom */
+    #grass {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 10%;
+      background: linear-gradient(to top, #2e8b57, #3cb371);
+      z-index: 1;
+    }
+
     .bird {
       position: absolute;
       width: 6vw;
@@ -53,6 +75,7 @@
       background-size: cover;
       background-position: center;
       cursor: pointer;
+      z-index: 2;
     }
 
     .blood {
@@ -64,11 +87,24 @@
       background-position: center;
       pointer-events: none;
       animation: fadeOut 0.5s forwards;
+      z-index: 3;
     }
 
     @keyframes fadeOut {
       0% { opacity: 1; transform: scale(1); }
       100% { opacity: 0; transform: scale(1.5); }
+    }
+
+    /* Clouds */
+    .cloud {
+      position: absolute;
+      width: 12vw;
+      height: 8vw;
+      background-image: url('cloud.png'); /* replace with your cloud image */
+      background-size: cover;
+      background-position: center;
+      opacity: 0.7;
+      z-index: 0;
     }
 
     #gameOver {
@@ -83,12 +119,15 @@
       font-size: 3vw;
       border-radius: 1vw;
       text-align: center;
+      z-index: 4;
     }
 
     @media (max-width: 600px) {
       h1 { font-size: 6vw; }
       #score { font-size: 4vw; }
       .bird, .blood { width: 10vw; height: 10vw; }
+      .cloud { width: 20vw; height: 12vw; }
+      #sun { width: 20vw; height: 20vw; top: 2%; right: 2%; }
       #gameOver { font-size: 5vw; }
     }
   </style>
@@ -97,6 +136,8 @@
   <h1>Bird Clicking Game</h1>
   <div id="score">Score: 0</div>
   <div id="gameArea">
+    <img id="sun" src="sun.png" alt="Sun">
+    <div id="grass"></div>
     <div id="gameOver">Game Over! Refresh to play again</div>
   </div>
 
@@ -111,12 +152,13 @@
 
     let score = 0;
     let missed = 0;
-    const maxMissed = 10;
-    let birdSpeed = 0.25; // initial speed in vw/frame
+    const maxMissed = 100;
+    let birdSpeed = 0.25;
     let waveInterval = 2000;
     let gameInterval;
 
     function startGame() {
+      createClouds();
       gameInterval = setInterval(createBirdWave, waveInterval);
     }
     startGame();
@@ -132,19 +174,14 @@
       const bird = document.createElement('div');
       bird.classList.add('bird');
 
-      // Random vertical position
-      const maxY = gameArea.clientHeight - gameArea.clientWidth * 0.06;
+      const maxY = gameArea.clientHeight - gameArea.clientWidth * 0.06 - gameArea.clientHeight * 0.1; // above grass
       let y = Math.random() * maxY;
       bird.style.top = y + 'px';
 
-      // Random start side
       const startFromLeft = Math.random() > 0.5;
       bird.style.left = startFromLeft ? '-6vw' : '100vw';
-
-      // Flip bird if from right
       bird.style.transform = startFromLeft ? 'scaleX(1)' : 'scaleX(-1)';
 
-      // Click event
       bird.addEventListener('click', (event) => {
         gunshotSound.currentTime = 0;
         gunshotSound.play();
@@ -153,19 +190,18 @@
 
         score++;
         scoreDisplay.textContent = 'Score: ' + score;
-        birdSpeed += 0.005; // gradually increase speed
+        birdSpeed += 0.005;
 
         bird.remove();
       });
 
       gameArea.appendChild(bird);
 
-      // Movement with vertical wobble
       let posX = startFromLeft ? -6 : 100;
       const direction = startFromLeft ? 1 : -1;
 
-      const amplitude = 20; // vertical wobble px
-      const frequency = 0.02 + Math.random() * 0.03; // wobble speed
+      const amplitude = 20;
+      const frequency = 0.02 + Math.random() * 0.03;
 
       const move = setInterval(() => {
         posX += birdSpeed * direction;
@@ -183,7 +219,7 @@
             gameOver();
           }
         }
-      }, 16); // ~60fps
+      }, 16);
     }
 
     function createBlood(x, y) {
@@ -196,9 +232,28 @@
 
       gameArea.appendChild(blood);
 
-      setTimeout(() => {
-        blood.remove();
-      }, 500);
+      setTimeout(() => blood.remove(), 500);
+    }
+
+    function createClouds() {
+      for (let i = 0; i < 5; i++) {
+        const cloud = document.createElement('div');
+        cloud.classList.add('cloud');
+
+        const topPos = Math.random() * (gameArea.clientHeight * 0.5);
+        cloud.style.top = topPos + 'px';
+        cloud.style.left = Math.random() * 100 + 'vw';
+        gameArea.appendChild(cloud);
+
+        const speed = 0.02 + Math.random() * 0.03;
+
+        const moveCloud = setInterval(() => {
+          let currentLeft = parseFloat(cloud.style.left);
+          currentLeft += speed;
+          if (currentLeft > 100) currentLeft = -20;
+          cloud.style.left = currentLeft + 'vw';
+        }, 50);
+      }
     }
 
     function gameOver() {
