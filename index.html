@@ -27,7 +27,7 @@
       text-align: center;
     }
 
-    #score, #timer {
+    #score {
       font-size: 2.5vw;
       color: #fff;
       margin: 0.5vh;
@@ -49,7 +49,7 @@
       position: absolute;
       width: 6vw;
       height: 6vw;
-      background-image: url('bird.png'); /* your local image */
+      background-image: url('bird.png'); /* replace with your bird image */
       background-size: cover;
       background-position: center;
       cursor: pointer;
@@ -59,7 +59,7 @@
       position: absolute;
       width: 6vw;
       height: 6vw;
-      background-image: url('blood.png');
+      background-image: url('blood.png'); /* replace with your blood image */
       background-size: cover;
       background-position: center;
       pointer-events: none;
@@ -86,26 +86,16 @@
     }
 
     @media (max-width: 600px) {
-      h1 {
-        font-size: 6vw;
-      }
-      #score, #timer {
-        font-size: 4vw;
-      }
-      .bird, .blood {
-        width: 10vw;
-        height: 10vw;
-      }
-      #gameOver {
-        font-size: 5vw;
-      }
+      h1 { font-size: 6vw; }
+      #score { font-size: 4vw; }
+      .bird, .blood { width: 10vw; height: 10vw; }
+      #gameOver { font-size: 5vw; }
     }
   </style>
 </head>
 <body>
   <h1>Bird Clicking Game</h1>
   <div id="score">Score: 0</div>
-  <div id="timer">Time Left: 60</div>
   <div id="gameArea">
     <div id="gameOver">Game Over! Refresh to play again</div>
   </div>
@@ -116,36 +106,23 @@
   <script>
     const gameArea = document.getElementById('gameArea');
     const scoreDisplay = document.getElementById('score');
-    const timerDisplay = document.getElementById('timer');
     const gameOverScreen = document.getElementById('gameOver');
     const gunshotSound = document.getElementById('gunshotSound');
 
     let score = 0;
-    let timeLeft = 60;
-    let birdSpeed = 0.25;      // speed in vw per frame
-    let waveInterval = 2000; // time between waves (ms)
+    let missed = 0;
+    const maxMissed = 10;
+    let birdSpeed = 0.25; // initial speed in vw/frame
+    let waveInterval = 2000;
     let gameInterval;
 
-    // Timer
-    const countdown = setInterval(() => {
-      timeLeft--;
-      timerDisplay.textContent = 'Time Left: ' + timeLeft;
-      if (timeLeft <= 0) {
-        clearInterval(countdown);
-        clearInterval(gameInterval);
-        gameOver();
-      }
-    }, 1000);
-
-    // Start spawning waves of birds
     function startGame() {
       gameInterval = setInterval(createBirdWave, waveInterval);
     }
     startGame();
 
-    // Create a wave of multiple birds
     function createBirdWave() {
-      const numBirds = 3; // number of birds per wave
+      const numBirds = 3 + Math.floor(Math.random() * 3); // 3-5 birds per wave
       for (let i = 0; i < numBirds; i++) {
         setTimeout(() => createBird(i), i * 300);
       }
@@ -157,64 +134,77 @@
 
       // Random vertical position
       const maxY = gameArea.clientHeight - gameArea.clientWidth * 0.06;
-      const y = Math.random() * maxY;
+      let y = Math.random() * maxY;
       bird.style.top = y + 'px';
 
-      // Start on the left side
-      bird.style.left = '-6vw';
+      // Random start side
+      const startFromLeft = Math.random() > 0.5;
+      bird.style.left = startFromLeft ? '-6vw' : '100vw';
+
+      // Flip bird if from right
+      bird.style.transform = startFromLeft ? 'scaleX(1)' : 'scaleX(-1)';
 
       // Click event
       bird.addEventListener('click', (event) => {
-        // Play gunshot sound
         gunshotSound.currentTime = 0;
         gunshotSound.play();
 
-        // Add blood splatter
         createBlood(event.clientX, event.clientY);
 
-        // Increase score
         score++;
         scoreDisplay.textContent = 'Score: ' + score;
+        birdSpeed += 0.005; // gradually increase speed
 
         bird.remove();
       });
 
       gameArea.appendChild(bird);
 
-      // Movement left → right
-      let posX = -6; // in vw
+      // Movement with vertical wobble
+      let posX = startFromLeft ? -6 : 100;
+      const direction = startFromLeft ? 1 : -1;
+
+      const amplitude = 20; // vertical wobble px
+      const frequency = 0.02 + Math.random() * 0.03; // wobble speed
+
       const move = setInterval(() => {
-        posX += birdSpeed; // move in vw
+        posX += birdSpeed * direction;
         bird.style.left = posX + 'vw';
 
-        // if bird leaves screen
-        if (posX > 100) {
+        const wobble = Math.sin(posX * frequency * Math.PI * 2) * amplitude;
+        bird.style.top = (y + wobble) + 'px';
+
+        if ((startFromLeft && posX > 100) || (!startFromLeft && posX < -6)) {
           bird.remove();
           clearInterval(move);
+
+          missed++;
+          if (missed >= maxMissed) {
+            gameOver();
+          }
         }
       }, 16); // ~60fps
     }
 
-    // Create blood splatter at click position
     function createBlood(x, y) {
       const rect = gameArea.getBoundingClientRect();
       const blood = document.createElement('div');
       blood.classList.add('blood');
 
-      // Adjust coordinates to gameArea position
       blood.style.left = (x - rect.left - gameArea.clientWidth * 0.03) + 'px';
       blood.style.top = (y - rect.top - gameArea.clientWidth * 0.03) + 'px';
 
       gameArea.appendChild(blood);
 
-      // Remove blood after animation
       setTimeout(() => {
         blood.remove();
       }, 500);
     }
 
     function gameOver() {
+      clearInterval(gameInterval);
       document.querySelectorAll('.bird').forEach(bird => bird.remove());
+      gameOverScreen.textContent = `Game Over! Score: ${score}. Refresh to play again.`;
       gameOverScreen.style.display = 'block';
     }
   </script>
