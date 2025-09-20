@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Responsive Bird Clicking Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: skyblue;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      margin: 1vh;
+      color: #fff;
+      font-size: 4vw;
+      text-align: center;
+    }
+
+    #score, #timer {
+      font-size: 2.5vw;
+      color: #fff;
+      margin: 0.5vh;
+      text-align: center;
+    }
+
+    #gameArea {
+      position: relative;
+      width: 95vw;
+      height: 65vh;
+      border: 2px solid #fff;
+      background: linear-gradient(#87ceeb, #e0f7fa);
+      overflow: hidden;
+      cursor: crosshair;
+      border-radius: 1vw;
+    }
+
+    .bird {
+      position: absolute;
+      width: 6vw;
+      height: 6vw;
+      background-image: url('bird.png'); /* your local image */
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+    }
+
+    .blood {
+      position: absolute;
+      width: 6vw;
+      height: 6vw;
+      background-image: url('blood.png');
+      background-size: cover;
+      background-position: center;
+      pointer-events: none;
+      animation: fadeOut 0.5s forwards;
+    }
+
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.5); }
+    }
+
+    #gameOver {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 2vh 4vw;
+      font-size: 3vw;
+      border-radius: 1vw;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 6vw;
+      }
+      #score, #timer {
+        font-size: 4vw;
+      }
+      .bird, .blood {
+        width: 10vw;
+        height: 10vw;
+      }
+      #gameOver {
+        font-size: 5vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Bird Clicking Game</h1>
+  <div id="score">Score: 0</div>
+  <div id="timer">Time Left: 60</div>
+  <div id="gameArea">
+    <div id="gameOver">Game Over! Refresh to play again</div>
+  </div>
+
+  <!-- Gunshot audio -->
+  <audio id="gunshotSound" src="gunshot.mp3" preload="auto"></audio>
+
+  <script>
+    const gameArea = document.getElementById('gameArea');
+    const scoreDisplay = document.getElementById('score');
+    const timerDisplay = document.getElementById('timer');
+    const gameOverScreen = document.getElementById('gameOver');
+    const gunshotSound = document.getElementById('gunshotSound');
+
+    let score = 0;
+    let timeLeft = 60;
+    let birdSpeed = 0.25;      // speed in vw per frame
+    let waveInterval = 2000; // time between waves (ms)
+    let gameInterval;
+
+    // Timer
+    const countdown = setInterval(() => {
+      timeLeft--;
+      timerDisplay.textContent = 'Time Left: ' + timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        clearInterval(gameInterval);
+        gameOver();
+      }
+    }, 1000);
+
+    // Start spawning waves of birds
+    function startGame() {
+      gameInterval = setInterval(createBirdWave, waveInterval);
+    }
+    startGame();
+
+    // Create a wave of multiple birds
+    function createBirdWave() {
+      const numBirds = 3; // number of birds per wave
+      for (let i = 0; i < numBirds; i++) {
+        setTimeout(() => createBird(i), i * 300);
+      }
+    }
+
+    function createBird(i) {
+      const bird = document.createElement('div');
+      bird.classList.add('bird');
+
+      // Random vertical position
+      const maxY = gameArea.clientHeight - gameArea.clientWidth * 0.06;
+      const y = Math.random() * maxY;
+      bird.style.top = y + 'px';
+
+      // Start on the left side
+      bird.style.left = '-6vw';
+
+      // Click event
+      bird.addEventListener('click', (event) => {
+        // Play gunshot sound
+        gunshotSound.currentTime = 0;
+        gunshotSound.play();
+
+        // Add blood splatter
+        createBlood(event.clientX, event.clientY);
+
+        // Increase score
+        score++;
+        scoreDisplay.textContent = 'Score: ' + score;
+
+        bird.remove();
+      });
+
+      gameArea.appendChild(bird);
+
+      // Movement left → right
+      let posX = -6; // in vw
+      const move = setInterval(() => {
+        posX += birdSpeed; // move in vw
+        bird.style.left = posX + 'vw';
+
+        // if bird leaves screen
+        if (posX > 100) {
+          bird.remove();
+          clearInterval(move);
+        }
+      }, 16); // ~60fps
+    }
+
+    // Create blood splatter at click position
+    function createBlood(x, y) {
+      const rect = gameArea.getBoundingClientRect();
+      const blood = document.createElement('div');
+      blood.classList.add('blood');
+
+      // Adjust coordinates to gameArea position
+      blood.style.left = (x - rect.left - gameArea.clientWidth * 0.03) + 'px';
+      blood.style.top = (y - rect.top - gameArea.clientWidth * 0.03) + 'px';
+
+      gameArea.appendChild(blood);
+
+      // Remove blood after animation
+      setTimeout(() => {
+        blood.remove();
+      }, 500);
+    }
+
+    function gameOver() {
+      document.querySelectorAll('.bird').forEach(bird => bird.remove());
+      gameOverScreen.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
