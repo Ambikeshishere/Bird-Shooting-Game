@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bird Clicking Game - Top 70%</title>
+<title>Bird Killing Game</title>
 <style>
 * { box-sizing: border-box; margin:0; padding:0; }
 body { font-family: Arial, sans-serif; overflow: hidden; background: black; }
@@ -58,7 +58,7 @@ button.start-replay {
   pointer-events: none;
 }
 
-.bird { position:absolute; width:6vw; height:6vw; background-image: url('bird.png'); background-size: cover; background-position:center; cursor:pointer; z-index: 3; }
+.bird { position:absolute; width:6.5vw; height:5vw; background-size: cover; background-position:center; cursor:pointer; z-index: 3; }
 .blood { position:absolute; width:6vw; height:6vw; background-image:url('blood.png'); background-size:cover; background-position:center; pointer-events:none; animation: fadeOut 0.5s forwards; z-index: 4; }
 @keyframes fadeOut { 0% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(1.5); } }
 
@@ -113,6 +113,9 @@ let waveInterval=2000;
 let gameInterval;
 let birds=[];
 
+// Array of bird images
+const birdImages = ['bird1.png', 'bird2.png', 'bird3.png','bird4.png'];
+
 startBtn.addEventListener('click', ()=>{
   startBtn.style.display='none';
   startGame();
@@ -152,8 +155,14 @@ function createBirdWave(){
 }
 
 function createBird(){
-  const birdEl = document.createElement('div'); birdEl.classList.add('bird');
-  const skyHeight = gameArea.clientHeight*0.7; // Top 70% only
+  const birdEl = document.createElement('div'); 
+  birdEl.classList.add('bird');
+
+  // Randomly pick a bird image
+  const randomIndex = Math.floor(Math.random() * birdImages.length);
+  birdEl.style.backgroundImage = `url(${birdImages[randomIndex]})`;
+
+  const skyHeight = gameArea.clientHeight*0.7; // Top 70%
   const y = Math.random()*skyHeight;
   const startFromLeft = Math.random()>0.5;
   const posX = startFromLeft ? -6 : 100;
@@ -164,9 +173,13 @@ function createBird(){
   birdEl.addEventListener('click', e=>{
     gunshotSound.currentTime=0; gunshotSound.play();
     createBlood(e.clientX,e.clientY);
-    score++; scoreDisplay.textContent='Score: '+score;
+    score++; 
+    scoreDisplay.textContent='Score: '+score;
     birdEl.remove();
     birds = birds.filter(b=>b.element!==birdEl);
+
+    // Increase speed slightly on kill
+    birdSpeed += 0.005;
   });
 
   gameArea.appendChild(birdEl);
@@ -182,6 +195,9 @@ function createBird(){
   };
   birdObj.interval = setInterval(()=> moveBird(birdObj),16);
   birds.push(birdObj);
+
+  // Slight speed increase on spawn
+  birdSpeed += 0.002;
 }
 
 function moveBird(bird){
