@@ -16,7 +16,7 @@
     /* Full screen scoreboard in bottom-right */
     #scoreboard {
       position: fixed;
-      bottom: 20px;
+      bottom: 70px;
       right: 20px;
       background: rgba(0,0,0,0.5);
       padding: 10px 15px;
@@ -27,7 +27,21 @@
       text-align: right;
     }
 
-    button {
+    #pauseBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 5;
+      padding: 10px 15px;
+      font-size: 1.2rem;
+      border-radius: 10px;
+      background: #ff4500;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    button.start-replay {
       padding: 1vh 2vw;
       font-size: 2vw;
       border: none;
@@ -35,13 +49,16 @@
       cursor: pointer;
       color: #fff;
       position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       z-index: 5;
     }
 
-    #startBtn { top: 50%; left: 50%; transform: translate(-50%, -50%); background:#2e8b57; }
+    #startBtn { background:#2e8b57; }
     #startBtn:hover { background:#3cb371; }
 
-    #replayBtn { top: 50%; left: 50%; transform: translate(-50%, -50%); display:none; background:#1e90ff; }
+    #replayBtn { background:#1e90ff; display:none; }
     #replayBtn:hover { background:#3399ff; }
 
     #gameArea {
@@ -109,16 +126,18 @@
 
     @media (max-width:600px){
       #scoreboard{font-size:1.2rem; padding:8px 12px;}
-      button{font-size:4vw;padding:2vh 4vw;}
+      button.start-replay{font-size:4vw;padding:2vh 4vw;}
       .bird,.blood{width:10vw;height:10vw;}
       #gameOver{font-size:5vw;}
+      #pauseBtn{font-size:1rem;padding:6px 10px;}
     }
   </style>
 </head>
 <body>
   <h1>Bird Clicking Game</h1>
-  <div id="startBtn">Start Game</div>
-  <div id="replayBtn">Replay</div>
+  <button id="startBtn" class="start-replay">Start Game</button>
+  <button id="replayBtn" class="start-replay">Replay</button>
+  <button id="pauseBtn">Pause</button>
 
   <div id="scoreboard">
     <div id="score">Score: 0</div>
@@ -148,15 +167,23 @@
     const birdChirp = document.getElementById('birdChirp');
     const startBtn = document.getElementById('startBtn');
     const replayBtn = document.getElementById('replayBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
 
     let score = 0, missed = 0;
     const maxMissed = 100;
     let birdSpeed = 0.25, waveInterval = 2000;
     let gameInterval, chirpInterval;
     let birdIntervals = [];
+    let isPaused = false;
 
-    startBtn.addEventListener('click', ()=>{ startBtn.style.display='none'; startGame(); startAudio(); });
-    replayBtn.addEventListener('click', ()=>{ replayBtn.style.display='none'; resetGame(); startGame(); startAudio(); });
+    startBtn.addEventListener('click', () => { startBtn.style.display='none'; startGame(); startAudio(); });
+    replayBtn.addEventListener('click', () => { replayBtn.style.display='none'; resetGame(); startGame(); startAudio(); });
+
+    pauseBtn.addEventListener('click', () => {
+      if (!isPaused) { pauseGame(); pauseBtn.textContent = 'Resume'; }
+      else { resumeGame(); pauseBtn.textContent = 'Pause'; }
+      isPaused = !isPaused;
+    });
 
     function startAudio(){
       backgroundMusic.currentTime=0; backgroundMusic.volume=0.3; backgroundMusic.play().catch(()=>{});
@@ -173,10 +200,25 @@
       document.querySelectorAll('.bird').forEach(b=>b.remove());
       birdIntervals.forEach(i=>clearInterval(i));
       birdIntervals=[];
+      isPaused=false;
+      pauseBtn.textContent='Pause';
     }
 
     function startGame(){
       gameInterval=setInterval(createBirdWave,waveInterval);
+    }
+
+    function pauseGame(){
+      clearInterval(gameInterval);
+      clearInterval(chirpInterval);
+      birdIntervals.forEach(i=>clearInterval(i));
+      backgroundMusic.pause();
+      birdChirp.pause();
+    }
+
+    function resumeGame(){
+      startGame();
+      startAudio();
     }
 
     function createBirdWave(){
@@ -188,7 +230,7 @@
       const bird=document.createElement('div'); 
       bird.classList.add('bird');
 
-      // Limit bird to the sky area (top 80%)
+      // Sky area only (top 80%)
       const skyHeight = gameArea.clientHeight * 0.8;
       let y = Math.random() * skyHeight; 
       bird.style.top = y + 'px';
