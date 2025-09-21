@@ -13,33 +13,49 @@
       background: black;
     }
 
-    /* Full screen scoreboard in bottom-right */
-    #scoreboard {
+    /* Bottom-right container for scoreboard and buttons */
+    #scoreboardContainer {
       position: fixed;
-      bottom: 70px;
+      bottom: 20px;
       right: 20px;
+      z-index: 5;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    #scoreboard {
       background: rgba(0,0,0,0.5);
       padding: 10px 15px;
       border-radius: 10px;
       color: #fff;
       font-size: 1.5rem;
-      z-index: 5;
-      text-align: right;
+      min-width: 150px;
+    }
+
+    button {
+      padding: 8px 12px;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      color: #fff;
     }
 
     #pauseBtn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 5;
-      padding: 10px 15px;
-      font-size: 1.2rem;
-      border-radius: 10px;
       background: #ff4500;
-      color: #fff;
-      border: none;
-      cursor: pointer;
     }
+
+    #pauseBtn:hover { background: #ff6347; }
+
+    #replayBtn {
+      background:#1e90ff; 
+      display:none;
+    }
+
+    #replayBtn:hover { background:#3399ff; }
 
     button.start-replay {
       padding: 1vh 2vw;
@@ -57,9 +73,6 @@
 
     #startBtn { background:#2e8b57; }
     #startBtn:hover { background:#3cb371; }
-
-    #replayBtn { background:#1e90ff; display:none; }
-    #replayBtn:hover { background:#3399ff; }
 
     #gameArea {
       position: relative;
@@ -111,37 +124,36 @@
 
     #gameOver {
       display:none;
-      position: fixed;
-      top:50%;
-      left:50%;
-      transform:translate(-50%, -50%);
       background: rgba(0,0,0,0.7);
       color:white;
-      padding:2vh 4vw;
-      font-size:3vw;
+      padding:2vh 2vw;
+      font-size:1.2rem;
       border-radius:1vw;
-      text-align:center;
-      z-index:5;
+      text-align:right;
+      min-width: 150px;
     }
 
     @media (max-width:600px){
       #scoreboard{font-size:1.2rem; padding:8px 12px;}
       button.start-replay{font-size:4vw;padding:2vh 4vw;}
       .bird,.blood{width:10vw;height:10vw;}
-      #gameOver{font-size:5vw;}
-      #pauseBtn{font-size:1rem;padding:6px 10px;}
+      #gameOver{font-size:1rem; padding:6px 8px;}
+      #pauseBtn{font-size:0.9rem;padding:6px 10px;}
     }
   </style>
 </head>
 <body>
   <h1>Bird Clicking Game</h1>
   <button id="startBtn" class="start-replay">Start Game</button>
-  <button id="replayBtn" class="start-replay">Replay</button>
-  <button id="pauseBtn">Pause</button>
 
-  <div id="scoreboard">
-    <div id="score">Score: 0</div>
-    <div id="missed">Missed: 0</div>
+  <div id="scoreboardContainer">
+    <div id="scoreboard">
+      <div id="score">Score: 0</div>
+      <div id="missed">Missed: 0</div>
+    </div>
+    <button id="pauseBtn">Pause</button>
+    <div id="gameOver"></div>
+    <button id="replayBtn">Replay</button>
   </div>
 
   <div id="gameArea">
@@ -149,7 +161,6 @@
       <source src="background.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
-    <div id="gameOver">Game Over!</div>
   </div>
 
   <!-- Sounds -->
@@ -161,7 +172,7 @@
     const gameArea = document.getElementById('gameArea');
     const scoreDisplay = document.getElementById('score');
     const missedDisplay = document.getElementById('missed');
-    const gameOverScreen = document.getElementById('gameOver');
+    const gameOverDiv = document.getElementById('gameOver');
     const gunshotSound = document.getElementById('gunshotSound');
     const backgroundMusic = document.getElementById('backgroundMusic');
     const birdChirp = document.getElementById('birdChirp');
@@ -176,8 +187,18 @@
     let birdIntervals = [];
     let isPaused = false;
 
-    startBtn.addEventListener('click', () => { startBtn.style.display='none'; startGame(); startAudio(); });
-    replayBtn.addEventListener('click', () => { replayBtn.style.display='none'; resetGame(); startGame(); startAudio(); });
+    startBtn.addEventListener('click', () => { 
+      startBtn.style.display='none'; 
+      startGame(); 
+      startAudio(); 
+    });
+
+    replayBtn.addEventListener('click', () => { 
+      replayBtn.style.display='none'; 
+      resetGame(); 
+      startGame(); 
+      startAudio(); 
+    });
 
     pauseBtn.addEventListener('click', () => {
       if (!isPaused) { pauseGame(); pauseBtn.textContent = 'Resume'; }
@@ -196,7 +217,7 @@
       score=0; missed=0; birdSpeed=0.25;
       scoreDisplay.textContent='Score: 0';
       missedDisplay.textContent='Missed: 0';
-      gameOverScreen.style.display='none';
+      gameOverDiv.style.display='none';
       document.querySelectorAll('.bird').forEach(b=>b.remove());
       birdIntervals.forEach(i=>clearInterval(i));
       birdIntervals=[];
@@ -230,7 +251,6 @@
       const bird=document.createElement('div'); 
       bird.classList.add('bird');
 
-      // Sky area only (top 80%)
       const skyHeight = gameArea.clientHeight * 0.8;
       let y = Math.random() * skyHeight; 
       bird.style.top = y + 'px';
@@ -289,8 +309,8 @@
       birdIntervals=[];
       backgroundMusic.pause(); birdChirp.pause();
       document.querySelectorAll('.bird').forEach(b=>b.remove());
-      gameOverScreen.innerHTML=`Game Over!<br>Your Score: ${score}`;
-      gameOverScreen.style.display='block';
+      gameOverDiv.innerHTML = `Game Over! Your Score: ${score}`;
+      gameOverDiv.style.display='block';
       replayBtn.style.display='inline-block';
     }
   </script>
