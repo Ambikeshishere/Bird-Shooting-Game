@@ -132,79 +132,111 @@ const birdChirp = document.getElementById('birdChirp');
 const startBtn = document.getElementById('startBtn');
 const replayBtn = document.getElementById('replayBtn');
 
-let score=0, missed=0, maxMissed=100;
-let birdSpeed= window.innerWidth < 600 ? 0.35 : 0.25;
-let waveInterval=2000;
-let gameInterval;
-let birds=[];
+let score = 0, missed = 0, maxMissed = 100;
+let birdSpeed = window.innerWidth < 600 ? 0.35 : 0.25;
+let waveInterval = 2000;
+let birds = [];
+let lastWaveTime = 0;
+let gameRunning = false;
 
-// Array of bird images
-const birdImages = ['bird1.png','bird4.png'];
+const birdImages = ['bird1.png', 'bird4.png'];
 
-startBtn.addEventListener('click', ()=>{
-  startBtn.style.display='none';
-  startGame();
-  startAudio();
-});
-
-replayBtn.addEventListener('click', ()=>{
-  replayBtn.style.display='none';
+startBtn.addEventListener('click', () => {
+  startBtn.style.display = 'none';
   resetGame();
   startGame();
   startAudio();
 });
 
-function startAudio(){
-  backgroundMusic.currentTime=0; backgroundMusic.volume=0.3; backgroundMusic.play().catch(()=>{});
-  setInterval(()=>{
-    birdChirp.currentTime=0; birdChirp.volume=0.4; birdChirp.play();
-  },7000);
+replayBtn.addEventListener('click', () => {
+  replayBtn.style.display = 'none';
+  resetGame();
+  startGame();
+  startAudio();
+});
+
+function startAudio() {
+  backgroundMusic.currentTime = 0;
+  backgroundMusic.volume = 0.3;
+  backgroundMusic.play().catch(() => {});
+  
+  setInterval(() => {
+    birdChirp.currentTime = 0;
+    birdChirp.volume = 0.4;
+    birdChirp.play();
+  }, 7000);
 }
 
-function resetGame(){
-  score=0; missed=0; birdSpeed= window.innerWidth < 600 ? 0.35 : 0.25;
-  scoreDisplay.textContent='Score: 0'; missedDisplay.textContent='Missed: 0';
-  gameOverDiv.style.display='none';
-  document.querySelectorAll('.bird').forEach(b=>b.remove());
-  birds.forEach(bird=>clearInterval(bird.interval));
-  birds=[];
+function resetGame() {
+  score = 0; missed = 0;
+  birdSpeed = window.innerWidth < 600 ? 0.35 : 0.25;
+  scoreDisplay.textContent = 'Score: 0';
+  missedDisplay.textContent = 'Missed: 0';
+  gameOverDiv.style.display = 'none';
+  birds.forEach(b => b.element.remove());
+  birds = [];
+  lastWaveTime = 0;
+  gameRunning = true;
 }
 
-function startGame(){
-  gameInterval=setInterval(createBirdWave, waveInterval);
+function startGame() {
+  requestAnimationFrame(gameLoop);
 }
 
-function createBirdWave(){
-  const numBirds = 3 + Math.floor(Math.random()*3);
-  for(let i=0;i<numBirds;i++){ setTimeout(()=>createBird(), i*300); }
+function gameLoop(timestamp) {
+  if (!gameRunning) return;
+
+  // Create waves every waveInterval
+  if (timestamp - lastWaveTime > waveInterval) {
+    createBirdWave();
+    lastWaveTime = timestamp;
+  }
+
+  // Move birds
+  birds.forEach(bird => moveBird(bird));
+
+  requestAnimationFrame(gameLoop);
 }
 
-function createBird(){
+function createBirdWave() {
+  const numBirds = 3 + Math.floor(Math.random() * 3);
+  // Ensure at least one of each bird type per wave
+  const usedBirds = [...birdImages];
+  for (let i = 0; i < numBirds; i++) {
+    setTimeout(() => {
+      let birdType;
+      if (usedBirds.length > 0) {
+        birdType = usedBirds.shift();
+      } else {
+        birdType = birdImages[Math.floor(Math.random() * birdImages.length)];
+      }
+      createBird(birdType);
+    }, i * 300);
+  }
+}
+
+function createBird(birdType) {
   const birdEl = document.createElement('div'); 
   birdEl.classList.add('bird');
+  birdEl.style.backgroundImage = `url(${birdType})`;
 
-  // Randomly pick a bird image
-  const randomIndex = Math.floor(Math.random() * birdImages.length);
-  birdEl.style.backgroundImage = `url(${birdImages[randomIndex]})`;
-
-  const skyHeight = gameArea.clientHeight*0.7; // Top 70%
-  const y = Math.random()*skyHeight;
-  const startFromLeft = Math.random()>0.5;
+  const skyHeight = gameArea.clientHeight * 0.7;
+  const y = Math.random() * skyHeight;
+  const startFromLeft = Math.random() > 0.5;
   const posX = startFromLeft ? -6 : 100;
   birdEl.style.top = y + 'px';
-  birdEl.style.left = posX+'vw';
+  birdEl.style.left = posX + 'vw';
   birdEl.style.transform = startFromLeft ? 'scaleX(1)' : 'scaleX(-1)';
 
-  birdEl.addEventListener('click', e=>{
-    gunshotSound.currentTime=0; gunshotSound.play();
-    createBlood(e.clientX,e.clientY);
-    score++; 
-    scoreDisplay.textContent='Score: '+score;
+  birdEl.addEventListener('click', e => {
+    gunshotSound.currentTime = 0;
+    gunshotSound.play();
+    createBlood(e.clientX, e.clientY);
+    score++;
+    scoreDisplay.textContent = 'Score: ' + score;
     birdEl.remove();
-    birds = birds.filter(b=>b.element!==birdEl);
-
-    // Increase speed slightly on kill
-    birdSpeed += 0.005;
+    birds = birds.filter(b => b.element !== birdEl);
+    birdSpeed += 0.005; // increase speed on kill
   });
 
   gameArea.appendChild(birdEl);
@@ -213,53 +245,51 @@ function createBird(){
     element: birdEl,
     posX: posX,
     y: y,
-    direction: startFromLeft?1:-1,
+    direction: startFromLeft ? 1 : -1,
     amplitude: 20,
-    frequency: 0.02 + Math.random()*0.03,
-    interval: null
+    frequency: 0.02 + Math.random() * 0.03
   };
-  birdObj.interval = setInterval(()=> moveBird(birdObj),16);
-  birds.push(birdObj);
 
-  // Slight speed increase on spawn
-  birdSpeed += 0.002;
+  birds.push(birdObj);
+  birdSpeed += 0.002; // slight increase on spawn
 }
 
-function moveBird(bird){
-  bird.posX += birdSpeed*bird.direction;
-  bird.element.style.left = bird.posX+'vw';
-  const wobble = Math.sin(bird.posX*bird.frequency*Math.PI*2)*bird.amplitude;
-  bird.element.style.top = (bird.y + wobble)+'px';
+function moveBird(bird) {
+  bird.posX += birdSpeed * bird.direction;
+  bird.element.style.left = bird.posX + 'vw';
+  const wobble = Math.sin(bird.posX * bird.frequency * Math.PI * 2) * bird.amplitude;
+  bird.element.style.top = (bird.y + wobble) + 'px';
 
-  if((bird.direction===1 && bird.posX>100) || (bird.direction===-1 && bird.posX<-6)){
+  if ((bird.direction === 1 && bird.posX > 100) || (bird.direction === -1 && bird.posX < -6)) {
     bird.element.remove();
-    clearInterval(bird.interval);
-    birds = birds.filter(b=>b!==bird);
-    missed++; missedDisplay.textContent='Missed: '+missed;
-    if(missed>=maxMissed) gameOver();
+    birds = birds.filter(b => b !== bird);
+    missed++;
+    missedDisplay.textContent = 'Missed: ' + missed;
+    if (missed >= maxMissed) gameOver();
   }
 }
 
-function createBlood(x,y){
+function createBlood(x, y) {
   const rect = gameArea.getBoundingClientRect();
-  const blood = document.createElement('div'); blood.classList.add('blood');
-  blood.style.left = (x-rect.left-30)+'px';
-  blood.style.top = (y-rect.top-30)+'px';
+  const blood = document.createElement('div');
+  blood.classList.add('blood');
+  blood.style.left = (x - rect.left - 30) + 'px';
+  blood.style.top = (y - rect.top - 30) + 'px';
   gameArea.appendChild(blood);
-  setTimeout(()=>blood.remove(),500);
+  setTimeout(() => blood.remove(), 500);
 }
 
-function gameOver(){
-  clearInterval(gameInterval);
-  birds.forEach(b=>clearInterval(b.interval));
-  birds.forEach(b=>b.element.remove());
-  birds=[];
-  backgroundMusic.pause(); birdChirp.pause();
+function gameOver() {
+  gameRunning = false;
+  birds.forEach(b => b.element.remove());
+  birds = [];
+  backgroundMusic.pause();
+  birdChirp.pause();
   gameOverDiv.innerHTML = `Game Over! Your Score: ${score}`;
-  gameOverDiv.style.display='block';
-  replayBtn.style.display='inline-block';
+  gameOverDiv.style.display = 'block';
+  replayBtn.style.display = 'inline-block';
 }
-</script><div id="footer">Created by Ambikesh Srivastava</div>
-
+</script>
+<div id="footer">Created by Ambikesh Srivastava</div>
 </body>
 </html>
