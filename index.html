@@ -1,318 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bird Clicking Game - Full Screen Video</title>
-  <style>
-    * { box-sizing: border-box; margin:0; padding:0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bird Clicking Game - Responsive Pause Fix</title>
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: Arial, sans-serif; overflow: hidden; background: black; }
 
-    body {
-      font-family: Arial, sans-serif;
-      overflow: hidden;
-      background: black;
-    }
+#scoreboardContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 5;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
 
-    /* Bottom-right container for scoreboard and buttons */
-    #scoreboardContainer {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 5;
-      text-align: right;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 10px;
-    }
+#scoreboard {
+  background: rgba(0,0,0,0.5);
+  padding: 10px 15px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1.5rem;
+  min-width: 150px;
+}
 
-    #scoreboard {
-      background: rgba(0,0,0,0.5);
-      padding: 10px 15px;
-      border-radius: 10px;
-      color: #fff;
-      font-size: 1.5rem;
-      min-width: 150px;
-    }
+button { padding: 8px 12px; font-size: 1rem; border-radius: 10px; border: none; cursor: pointer; color: #fff; }
+#pauseBtn { background: #ff4500; }
+#pauseBtn:hover { background: #ff6347; }
+#replayBtn { background:#1e90ff; display:none; }
+#replayBtn:hover { background:#3399ff; }
 
-    button {
-      padding: 8px 12px;
-      font-size: 1rem;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      color: #fff;
-    }
+button.start-replay {
+  padding: 1vh 2vw;
+  font-size: 2vw;
+  border: none;
+  border-radius: 1vw;
+  cursor: pointer;
+  color: #fff;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+#startBtn { background:#2e8b57; }
+#startBtn:hover { background:#3cb371; }
 
-    #pauseBtn {
-      background: #ff4500;
-    }
+#gameArea { position: relative; width: 100vw; height: 100vh; overflow: hidden; cursor: crosshair; }
+#backgroundVideo {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
 
-    #pauseBtn:hover { background: #ff6347; }
+.bird { position:absolute; width:6vw; height:6vw; background-image: url('bird.png'); background-size: cover; background-position:center; cursor:pointer; z-index: 3; }
+.blood { position:absolute; width:6vw; height:6vw; background-image:url('blood.png'); background-size:cover; background-position:center; pointer-events:none; animation: fadeOut 0.5s forwards; z-index: 4; }
+@keyframes fadeOut { 0% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(1.5); } }
 
-    #replayBtn {
-      background:#1e90ff; 
-      display:none;
-    }
+#gameOver { display:none; background: rgba(0,0,0,0.7); color:white; padding:2vh 2vw; font-size:1.2rem; border-radius:1vw; text-align:right; min-width: 150px; }
 
-    #replayBtn:hover { background:#3399ff; }
-
-    button.start-replay {
-      padding: 1vh 2vw;
-      font-size: 2vw;
-      border: none;
-      border-radius: 1vw;
-      cursor: pointer;
-      color: #fff;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 5;
-    }
-
-    #startBtn { background:#2e8b57; }
-    #startBtn:hover { background:#3cb371; }
-
-    #gameArea {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      cursor: crosshair;
-    }
-
-    /* Fullscreen video background */
-    #backgroundVideo {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .bird {
-      position:absolute;
-      width:6vw;
-      height:6vw;
-      background-image: url('bird.png');
-      background-size: cover;
-      background-position:center;
-      cursor:pointer;
-      z-index: 3;
-    }
-
-    .blood {
-      position:absolute;
-      width:6vw;
-      height:6vw;
-      background-image:url('blood.png');
-      background-size:cover;
-      background-position:center;
-      pointer-events:none;
-      animation: fadeOut 0.5s forwards;
-      z-index: 4;
-    }
-
-    @keyframes fadeOut {
-      0% { opacity:1; transform:scale(1); }
-      100% { opacity:0; transform:scale(1.5); }
-    }
-
-    #gameOver {
-      display:none;
-      background: rgba(0,0,0,0.7);
-      color:white;
-      padding:2vh 2vw;
-      font-size:1.2rem;
-      border-radius:1vw;
-      text-align:right;
-      min-width: 150px;
-    }
-
-    @media (max-width:600px){
-      #scoreboard{font-size:1.2rem; padding:8px 12px;}
-      button.start-replay{font-size:4vw;padding:2vh 4vw;}
-      .bird,.blood{width:10vw;height:10vw;}
-      #gameOver{font-size:1rem; padding:6px 8px;}
-      #pauseBtn{font-size:0.9rem;padding:6px 10px;}
-    }
-  </style>
+@media (max-width:600px){
+  .bird, .blood { width: 12vw; height: 12vw; }
+  #scoreboard{font-size:1.2rem; padding:8px 12px;}
+  button.start-replay{font-size:4vw;padding:2vh 4vw;}
+  #gameOver{font-size:1rem; padding:6px 8px;}
+  #pauseBtn{font-size:0.9rem;padding:6px 10px;}
+}
+</style>
 </head>
 <body>
-  <h1>Bird Clicking Game</h1>
-  <button id="startBtn" class="start-replay">Start Game</button>
+<h1>Bird Clicking Game</h1>
+<button id="startBtn" class="start-replay">Start Game</button>
 
-  <div id="scoreboardContainer">
-    <div id="scoreboard">
-      <div id="score">Score: 0</div>
-      <div id="missed">Missed: 0</div>
-    </div>
-    <button id="pauseBtn">Pause</button>
-    <div id="gameOver"></div>
-    <button id="replayBtn">Replay</button>
+<div id="scoreboardContainer">
+  <div id="scoreboard">
+    <div id="score">Score: 0</div>
+    <div id="missed">Missed: 0</div>
   </div>
+  <button id="pauseBtn">Pause</button>
+  <div id="gameOver"></div>
+  <button id="replayBtn">Replay</button>
+</div>
 
-  <div id="gameArea">
-    <video id="backgroundVideo" autoplay muted loop playsinline>
-      <source src="background.mp4" type="video/mp4">
-      Your browser does not support the video tag.
-    </video>
-  </div>
+<div id="gameArea">
+  <video id="backgroundVideo" autoplay muted loop playsinline>
+    <source src="background.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</div>
 
-  <!-- Sounds -->
-  <audio id="gunshotSound" src="gunshot.mp3" preload="auto"></audio>
-  <audio id="backgroundMusic" src="soft-music.mp3" preload="auto" loop></audio>
-  <audio id="birdChirp" src="bird-chirp.mp3" preload="auto"></audio>
+<audio id="gunshotSound" src="gunshot.mp3" preload="auto"></audio>
+<audio id="backgroundMusic" src="soft-music.mp3" preload="auto" loop></audio>
+<audio id="birdChirp" src="bird-chirp.mp3" preload="auto"></audio>
 
-  <script>
-    const gameArea = document.getElementById('gameArea');
-    const scoreDisplay = document.getElementById('score');
-    const missedDisplay = document.getElementById('missed');
-    const gameOverDiv = document.getElementById('gameOver');
-    const gunshotSound = document.getElementById('gunshotSound');
-    const backgroundMusic = document.getElementById('backgroundMusic');
-    const birdChirp = document.getElementById('birdChirp');
-    const startBtn = document.getElementById('startBtn');
-    const replayBtn = document.getElementById('replayBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
+<script>
+const gameArea = document.getElementById('gameArea');
+const scoreDisplay = document.getElementById('score');
+const missedDisplay = document.getElementById('missed');
+const gameOverDiv = document.getElementById('gameOver');
+const gunshotSound = document.getElementById('gunshotSound');
+const backgroundMusic = document.getElementById('backgroundMusic');
+const birdChirp = document.getElementById('birdChirp');
+const startBtn = document.getElementById('startBtn');
+const replayBtn = document.getElementById('replayBtn');
+const pauseBtn = document.getElementById('pauseBtn');
 
-    let score = 0, missed = 0;
-    const maxMissed = 100;
-    let birdSpeed = 0.25, waveInterval = 2000;
-    let gameInterval, chirpInterval;
-    let birdIntervals = [];
-    let isPaused = false;
+let score=0, missed=0, maxMissed=100;
+let birdSpeed= window.innerWidth < 600 ? 0.35 : 0.25;
+let waveInterval=2000;
+let gameInterval, chirpInterval;
+let birds=[]; // stores bird objects with positions
+let isPaused=false;
 
-    startBtn.addEventListener('click', () => { 
-      startBtn.style.display='none'; 
-      startGame(); 
-      startAudio(); 
-    });
+startBtn.addEventListener('click', ()=>{
+  startBtn.style.display='none';
+  startGame();
+  startAudio();
+});
+replayBtn.addEventListener('click', ()=>{
+  replayBtn.style.display='none';
+  resetGame();
+  startGame();
+  startAudio();
+});
+pauseBtn.addEventListener('click', ()=>{
+  if(!isPaused){ pauseGame(); pauseBtn.textContent='Resume'; }
+  else{ resumeGame(); pauseBtn.textContent='Pause'; }
+  isPaused = !isPaused;
+});
 
-    replayBtn.addEventListener('click', () => { 
-      replayBtn.style.display='none'; 
-      resetGame(); 
-      startGame(); 
-      startAudio(); 
-    });
+function startAudio(){
+  backgroundMusic.currentTime=0; backgroundMusic.volume=0.3; backgroundMusic.play().catch(()=>{});
+  chirpInterval = setInterval(()=>{
+    birdChirp.currentTime=0; birdChirp.volume=0.4; birdChirp.play();
+  },7000);
+}
 
-    pauseBtn.addEventListener('click', () => {
-      if (!isPaused) { pauseGame(); pauseBtn.textContent = 'Resume'; }
-      else { resumeGame(); pauseBtn.textContent = 'Pause'; }
-      isPaused = !isPaused;
-    });
+function resetGame(){
+  score=0; missed=0; birdSpeed= window.innerWidth < 600 ? 0.35 : 0.25;
+  scoreDisplay.textContent='Score: 0'; missedDisplay.textContent='Missed: 0';
+  gameOverDiv.style.display='none';
+  document.querySelectorAll('.bird').forEach(b=>b.remove());
+  birds.forEach(bird=>clearInterval(bird.interval));
+  birds=[];
+  isPaused=false; pauseBtn.textContent='Pause';
+}
 
-    function startAudio(){
-      backgroundMusic.currentTime=0; backgroundMusic.volume=0.3; backgroundMusic.play().catch(()=>{});
-      chirpInterval = setInterval(()=>{
-        birdChirp.currentTime=0; birdChirp.volume=0.4; birdChirp.play();
-      },7000);
+function startGame(){
+  gameInterval=setInterval(createBirdWave, waveInterval);
+}
+
+function pauseGame(){
+  clearInterval(gameInterval);
+  clearInterval(chirpInterval);
+  birds.forEach(bird=>clearInterval(bird.interval));
+  backgroundMusic.pause(); birdChirp.pause();
+}
+
+function resumeGame(){
+  startGame();
+  startAudio();
+  birds.forEach(bird=>{
+    bird.interval = setInterval(()=> moveBird(bird),16);
+  });
+}
+
+function createBirdWave(){
+  const numBirds = 3 + Math.floor(Math.random()*3);
+  for(let i=0;i<numBirds;i++){ setTimeout(()=>createBird(), i*300); }
+}
+
+function createBird(){
+  const birdEl = document.createElement('div'); birdEl.classList.add('bird');
+  const skyHeight = gameArea.clientHeight*0.8;
+  const y = Math.random()*skyHeight;
+  const startFromLeft = Math.random()>0.5;
+  const posX = startFromLeft ? -6 : 100;
+  birdEl.style.top = y + 'px';
+  birdEl.style.left = posX+'vw';
+  birdEl.style.transform = startFromLeft ? 'scaleX(1)' : 'scaleX(-1)';
+
+  birdEl.addEventListener('click', e=>{
+    if(isPaused) return;
+    gunshotSound.currentTime=0; gunshotSound.play();
+    createBlood(e.clientX,e.clientY);
+    score++; scoreDisplay.textContent='Score: '+score;
+    birdEl.remove();
+    birds = birds.filter(b=>b.element!==birdEl);
+  });
+
+  gameArea.appendChild(birdEl);
+
+  const birdObj = {
+    element: birdEl,
+    posX: posX,
+    y: y,
+    direction: startFromLeft?1:-1,
+    amplitude: 20,
+    frequency: 0.02 + Math.random()*0.03,
+    interval: null
+  };
+  birdObj.interval = setInterval(()=> moveBird(birdObj),16);
+  birds.push(birdObj);
+}
+
+function moveBird(bird){
+  if(isPaused) return;
+  bird.posX += birdSpeed*bird.direction;
+  bird.element.style.left = bird.posX+'vw';
+  const wobble = Math.sin(bird.posX*bird.frequency*Math.PI*2)*bird.amplitude;
+  bird.element.style.top = (bird.y + wobble)+'px';
+
+  if((bird.direction===1 && bird.posX>100) || (bird.direction===-1 && bird.posX<-6)){
+    bird.element.remove();
+    clearInterval(bird.interval);
+    birds = birds.filter(b=>b!==bird);
+    if(!isPaused){
+      missed++; missedDisplay.textContent='Missed: '+missed;
+      if(missed>=maxMissed) gameOver();
     }
+  }
+}
 
-    function resetGame(){
-      score=0; missed=0; birdSpeed=0.25;
-      scoreDisplay.textContent='Score: 0';
-      missedDisplay.textContent='Missed: 0';
-      gameOverDiv.style.display='none';
-      document.querySelectorAll('.bird').forEach(b=>b.remove());
-      birdIntervals.forEach(i=>clearInterval(i));
-      birdIntervals=[];
-      isPaused=false;
-      pauseBtn.textContent='Pause';
-    }
+function createBlood(x,y){
+  const rect = gameArea.getBoundingClientRect();
+  const blood = document.createElement('div'); blood.classList.add('blood');
+  blood.style.left = (x-rect.left-30)+'px';
+  blood.style.top = (y-rect.top-30)+'px';
+  gameArea.appendChild(blood);
+  setTimeout(()=>blood.remove(),500);
+}
 
-    function startGame(){
-      gameInterval=setInterval(createBirdWave,waveInterval);
-    }
-
-    function pauseGame(){
-      clearInterval(gameInterval);
-      clearInterval(chirpInterval);
-      birdIntervals.forEach(i=>clearInterval(i));
-      backgroundMusic.pause();
-      birdChirp.pause();
-    }
-
-    function resumeGame(){
-      startGame();
-      startAudio();
-    }
-
-    function createBirdWave(){
-      const numBirds=3+Math.floor(Math.random()*3);
-      for(let i=0;i<numBirds;i++){ setTimeout(()=>createBird(i), i*300); }
-    }
-
-    function createBird(i){
-      const bird=document.createElement('div'); 
-      bird.classList.add('bird');
-
-      const skyHeight = gameArea.clientHeight * 0.8;
-      let y = Math.random() * skyHeight; 
-      bird.style.top = y + 'px';
-
-      const startFromLeft = Math.random() > 0.5;
-      bird.style.left = startFromLeft ? '-6vw' : '100vw';
-      bird.style.transform = startFromLeft ? 'scaleX(1)' : 'scaleX(-1)';
-
-      bird.addEventListener('click', e => {
-        gunshotSound.currentTime=0; gunshotSound.play();
-        createBlood(e.clientX, e.clientY);
-        score++; 
-        scoreDisplay.textContent='Score: ' + score;
-        bird.remove();
-      });
-
-      gameArea.appendChild(bird);
-
-      let posX = startFromLeft ? -6 : 100;
-      const direction = startFromLeft ? 1 : -1;
-      const amplitude = 20;
-      const frequency = 0.02 + Math.random() * 0.03;
-
-      const move = setInterval(() => {
-        posX += birdSpeed * direction;
-        bird.style.left = posX + 'vw';
-        const wobble = Math.sin(posX * frequency * Math.PI * 2) * amplitude;
-        bird.style.top = (y + wobble) + 'px';
-
-        if ((startFromLeft && posX > 100) || (!startFromLeft && posX < -6)) {
-          bird.remove(); 
-          clearInterval(move);
-          birdIntervals = birdIntervals.filter(iv => iv !== move);
-          missed++; 
-          missedDisplay.textContent = 'Missed: ' + missed;
-          if(missed >= maxMissed) gameOver();
-        }
-      },16);
-
-      birdIntervals.push(move);
-    }
-
-    function createBlood(x,y){
-      const rect = gameArea.getBoundingClientRect();
-      const blood = document.createElement('div'); 
-      blood.classList.add('blood');
-      blood.style.left = (x - rect.left - 30) + 'px';
-      blood.style.top = (y - rect.top - 30) + 'px';
-      gameArea.appendChild(blood);
-      setTimeout(()=>blood.remove(),500);
-    }
-
-    function gameOver(){
-      clearInterval(gameInterval); clearInterval(chirpInterval);
-      birdIntervals.forEach(i=>clearInterval(i));
-      birdIntervals=[];
-      backgroundMusic.pause(); birdChirp.pause();
-      document.querySelectorAll('.bird').forEach(b=>b.remove());
-      gameOverDiv.innerHTML = `Game Over! Your Score: ${score}`;
-      gameOverDiv.style.display='block';
-      replayBtn.style.display='inline-block';
-    }
-  </script>
+function gameOver(){
+  clearInterval(gameInterval); clearInterval(chirpInterval);
+  birds.forEach(b=>clearInterval(b.interval));
+  birds.forEach(b=>b.element.remove());
+  birds=[];
+  backgroundMusic.pause(); birdChirp.pause();
+  gameOverDiv.innerHTML = `Game Over! Your Score: ${score}`;
+  gameOverDiv.style.display='block';
+  replayBtn.style.display='inline-block';
+}
+</script>
 </body>
 </html>
